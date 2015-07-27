@@ -1,7 +1,5 @@
 # PREDICT 422 Practical Machine Learning
 
-# Course Project - Example R Script File
-
 # OBJECTIVE: A charitable organization wishes to develop a machine learning
 # model to improve the cost-effectiveness of their direct marketing campaigns
 # to previous donors.
@@ -12,11 +10,11 @@
 # 2) Develop a prediction model to predict donation amounts for donors - the data
 # for this will consist of the records for donors only.
 
-# load the data
+# load data
 charity <- read.csv("charity.csv") # load the "charity.csv" file
 attach(charity)
 
-##### Conduct EDA #####
+##### EDA #####
 str(charity)
 summary(charity)
 sum(is.na(charity)) # only NAs for test values of DONR and DAMT response variables
@@ -45,7 +43,7 @@ table(home) # 1 for homeowners, 6:1 ratio
 table(chld) # number of children, zero-inflated distribution
 table(genf) # 5K to 3K, F to M
 
-# predictor transformations
+# a couple of simple predictor transformations
 charity.t <- charity
 charity.t$avhv <- log(charity.t$avhv)
 charity.t$inca = log(charity.t$inca)
@@ -56,6 +54,7 @@ lambda = boxcoxfit(Y, add.to.data = start )$lambda
 Y.t <- bcPower(Y.t + start, lambda)
 
 # set up data for analysis
+# start with the training set
 data.train <- charity.t[charity$part=="train",] # subsetting training data
 x.train <- data.train[,2:21] # predictor variables
 c.train <- data.train[,22] # donr classifications
@@ -63,6 +62,7 @@ n.train.c <- length(c.train) # 3984
 y.train <- data.train[c.train==1,23] # damt for observations with donr=1
 n.train.y <- length(y.train) # 1995
 
+# build the validation set
 data.valid <- charity.t[charity$part=="valid",]
 x.valid <- data.valid[,2:21]
 c.valid <- data.valid[,22] # donr
@@ -70,10 +70,12 @@ n.valid.c <- length(c.valid) # 2018
 y.valid <- data.valid[c.valid==1,23] # damt for observations with donr=1
 n.valid.y <- length(y.valid) # 999
 
+# and the testing set
 data.test <- charity.t[charity$part=="test",]
 n.test <- dim(data.test)[1] # 2007
 x.test <- data.test[,2:21]
 
+# standardize training set
 x.train.mean <- apply(x.train, 2, mean) # take mean of all predictor variables
 x.train.sd <- apply(x.train, 2, sd) # take std of all predictor variables
 x.train.std <- t((t(x.train)-x.train.mean)/x.train.sd) # standardize to have zero mean and unit sd
@@ -82,10 +84,12 @@ apply(x.train.std, 2, sd) # check unit sd
 data.train.std.c <- data.frame(x.train.std, donr=c.train) # to classify donr
 data.train.std.y <- data.frame(x.train.std[c.train==1,], damt=y.train) # to predict damt when donr=1
 
+# standardize validation set
 x.valid.std <- t((t(x.valid)-x.train.mean)/x.train.sd) # standardize using training mean and sd
 data.valid.std.c <- data.frame(x.valid.std, donr=c.valid) # to classify donr
 data.valid.std.y <- data.frame(x.valid.std[c.valid==1,], damt=y.valid) # to predict damt when donr=1
 
+# standardize testing set
 x.test.std <- t((t(x.test)-x.train.mean)/x.train.sd) # standardize using training mean and sd
 data.test.std <- data.frame(x.test.std)
 
@@ -184,7 +188,6 @@ table(chat.test)
 # See below for saving chat.test into a file for submission
 
 
-
 ##### PREDICTION MODELING ######
 
 # Least squares regression
@@ -221,8 +224,6 @@ sd((y.valid - pred.valid.ls2)^2)/sqrt(n.valid.y) # std error
 yhat.test <- predict(model.ls2, newdata = data.test.std) # test predictions
 
 
-
-
 # FINAL RESULTS
 
 # Save final results for both classification and regression
@@ -234,5 +235,3 @@ yhat.test[1:10] # check this consists of plausible predictions of damt
 
 ip <- data.frame(chat=chat.test, yhat=yhat.test) # data frame with two variables: chat and yhat
 write.csv(ip, file="JYM.csv", row.names=FALSE) # use your initials for the file name
-
-# submit the csv file in Angel for evaluation based on actual test donr and damt values
